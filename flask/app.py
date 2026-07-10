@@ -43,14 +43,14 @@ body {
 #matrixCanvas {
   position: fixed; top: 0; left: 0; z-index: -1; width: 100%; height: 100%;
 }
-.header-box { text-align: center; padding-top: 20px; }
+.header-box { text-align: center; padding-top: 15px; box-sizing: border-box; }
 h1 {
   background: linear-gradient(135deg, #e0f7fa 0%, #00bfa5 50%, #00796b 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  font-weight: 800; font-size: 36px; margin: 0;
+  font-weight: 800; font-size: 34px; margin: 0;
   letter-spacing: -0.5px;
 }
-p { color: #8892b0; margin: 5px 0 20px 0; font-size: 14px; letter-spacing: 0.5px; }
+p { color: #8892b0; margin: 8px 0 10px 0; font-size: 14px; letter-spacing: 0.5px; }
 </style>
 </head>
 <body>
@@ -94,8 +94,8 @@ setInterval(drawMatrix, 40);
 </html>
 """
 
-# Render the high-end matrix background header
-components.html(matrix_html, height=140)
+# Fixed: Height increased from 140 to 180 to give plenty of space for the text
+components.html(matrix_html, height=180)
 
 # ==============================================================================
 # 3. STREAMLIT CYBERPUNK STYLING FOR SECURITY CONTROLS
