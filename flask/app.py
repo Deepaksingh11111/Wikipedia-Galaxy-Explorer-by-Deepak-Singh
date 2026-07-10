@@ -8,13 +8,13 @@ import streamlit.components.v1 as components
 # 1. PAGE CONFIGURATION & METADATA
 # ==============================================================================
 st.set_page_config(
-    page_title="ThreatIntel OSINT Hub",
+    page_title="CyberSentry OSINT Hub",
     page_icon="🛡️",
     layout="wide"
 )
 
 # Professional, secure User-Agent to comply with Wikimedia's API policy
-USER_AGENT = "ThreatIntelOSINTExplorer/6.0 (Deepak Singh)"
+USER_AGENT = "CyberSentryOSINTExplorer/6.0 (Deepak Singh)"
 wiki = wikipediaapi.Wikipedia(language='en', user_agent=USER_AGENT)
 
 # Google Gemini API Core Setup with your Fresh API Key
@@ -56,7 +56,7 @@ p { color: #8892b0; margin: 5px 0 20px 0; font-size: 14px; letter-spacing: 0.5px
 <body>
 <canvas id="matrixCanvas"></canvas>
 <div class="header-box">
-  <h1>🛡️ ThreatIntel OSINT Hub & AI Analyzer</h1>
+  <h1>🛡️ CyberSentry OSINT & Threat Intelligence Hub</h1>
   <p>Automated Open Source Intelligence Gathering & Secure LLM Synthesis Engine</p>
 </div>
 <script>
@@ -164,7 +164,7 @@ with btn_col1:
             with st.spinner("📡 Querying Global OSINT Registries..."):
                 page = wiki.page(clean_query)
                 if page.exists():
-                    st.session_state.intel_title = f"📁 OSINT Target Threat Profile: {page.title}"
+                    st.session_state.intel_title = f"📁 CyberSentry Threat Profile: {page.title}"
                     st.session_state.intel_body = page.summary[:1500]
                 else:
                     st.error("❌ Incident Alert: No threat intelligence patterns identified for specified entity.")
@@ -174,46 +174,46 @@ with btn_col2:
         if st.session_state.intel_body == "System Idle. Awaiting OSINT Target Query Initialization...":
             st.warning("⚠️ Action Blocked: Populate the OSINT active threat database before invoking the AI core.")
         else:
-            with st.spinner("🤖 Initiating Deep LLM Vulnerability Analysis Core..."):
+            with st.spinner("🤖 Initiating Deep CyberSentry LLM Vulnerability Analysis Core..."):
                 try:
                     # 1. Attempting Live Google Gemini Processing
                     model = genai.GenerativeModel(MODEL_NAME)
-                    prompt = f"आप एक अनुभवी भारतीय AI साइबर सुरक्षा विशेषज्ञ सहायक 'आशी' हैं। इस तकनीकी इंटेलिजेंस सारांश को आसान हिंदी में समझाइए:\n{st.session_state.intel_body}"
+                    prompt = f"आप एक अनुभवी भारतीय AI साइबर सुरक्षा विशेषज्ञ सहायक 'आशी' हैं जो 'CyberSentry' हब का संचालन करती हैं। इस तकनीकी इंटेलिजेंस सारांश को आसान हिंदी में समझाइए:\n{st.session_state.intel_body}"
                     response = model.generate_content(prompt)
                     
-                    st.session_state.intel_title = "🛡️ Security Intelligence Summary (Aashi Core AI Synthesis)"
+                    st.session_state.intel_title = "🛡️ Security Intelligence Summary (CyberSentry AI Core)"
                     st.session_state.intel_body = response.text.strip()
                 except Exception as e:
                     # 2. EMERGENCY FALLBACK MATRIX: If Live API key triggers an exception, switch to deterministic logs
                     current_query = query_input.lower().strip()
                     
                     if "sql injection" in current_query or "sqli" in current_query:
-                        st.session_state.intel_title = "🛡️ Security Intelligence Summary (Aashi Core - Backup Matrix)"
+                        st.session_state.intel_title = "🛡️ Security Intelligence Summary (CyberSentry Backup Matrix)"
                         st.session_state.intel_body = (
-                            "नमस्ते! मैं हूँ आपकी सुरक्षा विशेषज्ञ 'आशी'। SQL Injection (SQLi) एक बेहद खतरनाक हमला है। "
+                            "नमस्ते! मैं हूँ आपकी सुरक्षा विशेषज्ञ 'आशी' और आप देख रहे हैं CyberSentry हब का बैकअप मोड। SQL Injection (SQLi) एक बेहद खतरनाक हमला है। "
                             "यह तब होता है जब एक डेवलपर यूजर के इनपुट को बिना साफ किए सीधे डेटाबेस क्वेरी में जोड़ देता है। "
                             "अटैकर इसका फायदा उठाकर चालाकी से हानिकारक SQL कोड (जैसे ' OR 1=1 --) इनपुट बॉक्स में डाल देता है। "
                             "इससे डेटाबेस भ्रमित हो जाता है और बिना पासवर्ड के लॉगिन की अनुमति दे देता है या संवेदनशील डेटा लीक कर देता है। "
                             "बचाव: इसे रोकने का एकमात्र सबसे अच्छा तरीका 'Parameterized Queries' या 'Prepared Statements' का उपयोग करना है।"
                         )
                     elif "cross-site scripting" in current_query or "xss" in current_query:
-                        st.session_state.intel_title = "🛡️ Security Intelligence Summary (Aashi Core - Backup Matrix)"
+                        st.session_state.intel_title = "🛡️ Security Intelligence Summary (CyberSentry Backup Matrix)"
                         st.session_state.intel_body = (
-                            "नमस्ते! मैं हूँ आपकी सुरक्षा विशेषज्ञ 'आशी'। Cross-Site Scripting (XSS) एक क्लाइंट-साइड हमला है। "
+                            "नमस्ते! मैं हूँ आपकी सुरक्षा विशेषज्ञ 'आशी' और आप देख रहे हैं CyberSentry हब का बैकअप मोड। Cross-Site Scripting (XSS) एक क्लाइंट-साइड हमला है। "
                             "इसमें हमलावर किसी वेबसाइट में दुर्भावनापूर्ण JavaScript कोड डाल देता है। जब कोई दूसरा सामान्य यूजर उस पेज पर जाता है, "
                             "तो वह कोड उसके ब्राउज़र में चल जाता है। इससे अटैकर उनके सेशन कुकीज़ (Session Cookies) चुरा सकता है। "
                             "बचाव: हमेशा इनपुट को फ़िल्टर करें और आउटपुट को एन्कोड (Output Encoding) करें।"
                         )
                     elif "nmap" in current_query:
-                        st.session_state.intel_title = "🛡️ Security Intelligence Summary (Aashi Core - Backup Matrix)"
+                        st.session_state.intel_title = "🛡️ Security Intelligence Summary (CyberSentry Backup Matrix)"
                         st.session_state.intel_body = (
-                            "नमस्ते! मैं हूँ आपकी सुरक्षा विशेषज्ञ 'आशी'। Nmap (Network Mapper) एक ओपन-सोर्स इंफ्रास्ट्रक्चर टूल है। "
+                            "नमस्ते! मैं हूँ आपकी सुरक्षा विशेषज्ञ 'आशी' और आप देख रहे हैं CyberSentry हब का बैकअप मोड। Nmap (Network Mapper) एक ओपन-सोर्स इंफ्रास्ट्रक्चर टूल है। "
                             "इसका उपयोग नेटवर्क में यह पता लगाने के लिए किया जाता है कि कौन से डिवाइसेस एक्टिव हैं और कौन से पोर्ट्स (Ports) खुले हैं। "
                             "यह सुरक्षा टीमों को उनकी कमियों को ढूंढने में मदद करता है, लेकिन इसका उपयोग हमलावर टोही (Reconnaissance) के लिए भी कर सकते हैं।"
                         )
                     else:
                         # 🛡️ SECURITY MITIGATION: Secure Error Handling against Information Leakage
-                        st.error("❌ Secure Execution Exception: Core processing engine terminated data relay to protect framework integrity.")
+                        st.error("❌ CyberSentry Exception: Core processing engine terminated data relay to protect framework integrity.")
 
 # ==============================================================================
 # 5. DATA TELEMETRY OUTPUT DISPLAY
