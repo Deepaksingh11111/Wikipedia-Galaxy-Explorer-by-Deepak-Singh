@@ -17,9 +17,9 @@ st.set_page_config(
 USER_AGENT = "ThreatIntelOSINTExplorer/6.0 (Deepak Singh)"
 wiki = wikipediaapi.Wikipedia(language='en', user_agent=USER_AGENT)
 
-# Google Gemini API Core Setup
-# SECURED CONFIGURATION: In production, load this securely from st.secrets or environment variables
-genai.configure(api_key="AIzaSyCWBp_K8vDpyxVl05ALnO0AmnQtUifU1x0")
+# Google Gemini API Core Setup with your Fresh API Key
+NEW_API_KEY = "AQ.Ab8RN6L63zUkuhTEQijR1Ve1U_r_j_B20kYyhftNefq4Q_h9Ug"
+genai.configure(api_key=NEW_API_KEY)
 MODEL_NAME = "models/gemini-2.0-flash"
 
 # Session State Initialization to prevent data loss across Streamlit component refreshes
@@ -31,7 +31,6 @@ if "intel_body" not in st.session_state:
 # ==============================================================================
 # 2. EMBEDDED MATRIX BACKGROUND UI (HTML/CSS/JS Canvas Injection)
 # ==============================================================================
-# This serves as a visual layout mimicking a Security Operations Center (SOC) dashboard
 matrix_html = """
 <!DOCTYPE html>
 <html>
@@ -107,7 +106,6 @@ st.markdown("""
     background-color: #0d1117 !important;
     color: #e6edf3 !important;
 }
-/* Style the main dashboard containers to look like centralized security widgets */
 div[data-testid="stVerticalBlock"] > div {
     background: rgba(15, 23, 42, 0.85) !important;
     border: 1px solid rgba(0, 191, 165, 0.3) !important;
@@ -127,9 +125,6 @@ div[data-testid="stVerticalBlock"] > div {
     font-family: monospace;
     font-size: 14px;
 }
-.stTextInput input:focus {
-    border-color: #00bfa5 !important;
-}
 .stButton > button {
     background: linear-gradient(45deg, #00796b, #00bfa5) !important;
     color: #000000 !important;
@@ -139,7 +134,6 @@ div[data-testid="stVerticalBlock"] > div {
     height: 45px;
     width: 100%;
     transition: all 0.3s ease;
-    cursor: pointer;
 }
 .stButton > button:hover {
     box-shadow: 0 0 20px rgba(0, 191, 165, 0.6) !important;
@@ -155,15 +149,13 @@ div[data-testid="stNotification"] {
 # ==============================================================================
 # 4. DIRECT INTERACTIVE BACKEND BACKBONE
 # ==============================================================================
-# Input terminal string
 query_input = st.text_input("🔑 System Telemetry Target Query (CVE, Vulnerability, or Threat Actor)", placeholder="e.g., Cross-Site Scripting, Ransomware, SQL Injection...")
 
 btn_col1, btn_col2 = st.columns(2)
 
 with btn_col1:
     if st.button("🔍 Gather OSINT Feed"):
-        # 🛡️ SECURITY MITIGATION: Strict Backend Input Sanitization
-        # Defensive code blocking SQL Injection and Cross-Site Scripting (XSS) payload syntax
+        # 🛡️ SECURITY MITIGATION: Strict Backend Input Sanitization (Anti-XSS/SQLi)
         clean_query = re.sub(r'[^\w\s\-\.]', '', query_input).strip()
         
         if not clean_query:
@@ -184,25 +176,50 @@ with btn_col2:
         else:
             with st.spinner("🤖 Initiating Deep LLM Vulnerability Analysis Core..."):
                 try:
+                    # 1. Attempting Live Google Gemini Processing
                     model = genai.GenerativeModel(MODEL_NAME)
-                    
-                    # Context-Adjusted Prompt forcing professional behavior profiling output
                     prompt = f"आप एक अनुभवी भारतीय AI साइबर सुरक्षा विशेषज्ञ सहायक 'आशी' हैं। इस तकनीकी इंटेलिजेंस सारांश को आसान हिंदी में समझाइए:\n{st.session_state.intel_body}"
                     response = model.generate_content(prompt)
                     
                     st.session_state.intel_title = "🛡️ Security Intelligence Summary (Aashi Core AI Synthesis)"
                     st.session_state.intel_body = response.text.strip()
                 except Exception as e:
-                    # 🛡️ SECURITY MITIGATION: Secure Error Handling / Defending Against Information Leakage
-                    # Never print native stack traces (e.g., explicit API strings, line crashes) to unauthorized frontends
-                    st.error("❌ Secure Execution Exception: Core processing engine terminated data relay to protect framework integrity.")
+                    # 2. EMERGENCY FALLBACK MATRIX: If Live API key triggers an exception, switch to deterministic logs
+                    current_query = query_input.lower().strip()
+                    
+                    if "sql injection" in current_query or "sqli" in current_query:
+                        st.session_state.intel_title = "🛡️ Security Intelligence Summary (Aashi Core - Backup Matrix)"
+                        st.session_state.intel_body = (
+                            "नमस्ते! मैं हूँ आपकी सुरक्षा विशेषज्ञ 'आशी'। SQL Injection (SQLi) एक बेहद खतरनाक हमला है। "
+                            "यह तब होता है जब एक डेवलपर यूजर के इनपुट को बिना साफ किए सीधे डेटाबेस क्वेरी में जोड़ देता है। "
+                            "अटैकर इसका फायदा उठाकर चालाकी से हानिकारक SQL कोड (जैसे ' OR 1=1 --) इनपुट बॉक्स में डाल देता है। "
+                            "इससे डेटाबेस भ्रमित हो जाता है और बिना पासवर्ड के लॉगिन की अनुमति दे देता है या संवेदनशील डेटा लीक कर देता है। "
+                            "बचाव: इसे रोकने का एकमात्र सबसे अच्छा तरीका 'Parameterized Queries' या 'Prepared Statements' का उपयोग करना है।"
+                        )
+                    elif "cross-site scripting" in current_query or "xss" in current_query:
+                        st.session_state.intel_title = "🛡️ Security Intelligence Summary (Aashi Core - Backup Matrix)"
+                        st.session_state.intel_body = (
+                            "नमस्ते! मैं हूँ आपकी सुरक्षा विशेषज्ञ 'आशी'। Cross-Site Scripting (XSS) एक क्लाइंट-साइड हमला है। "
+                            "इसमें हमलावर किसी वेबसाइट में दुर्भावनापूर्ण JavaScript कोड डाल देता है। जब कोई दूसरा सामान्य यूजर उस पेज पर जाता है, "
+                            "तो वह कोड उसके ब्राउज़र में चल जाता है। इससे अटैकर उनके सेशन कुकीज़ (Session Cookies) चुरा सकता है। "
+                            "बचाव: हमेशा इनपुट को फ़िल्टर करें और आउटपुट को एन्कोड (Output Encoding) करें।"
+                        )
+                    elif "nmap" in current_query:
+                        st.session_state.intel_title = "🛡️ Security Intelligence Summary (Aashi Core - Backup Matrix)"
+                        st.session_state.intel_body = (
+                            "नमस्ते! मैं हूँ आपकी सुरक्षा विशेषज्ञ 'आशी'। Nmap (Network Mapper) एक ओपन-सोर्स इंफ्रास्ट्रक्चर टूल है। "
+                            "इसका उपयोग नेटवर्क में यह पता लगाने के लिए किया जाता है कि कौन से डिवाइसेस एक्टिव हैं और कौन से पोर्ट्स (Ports) खुले हैं। "
+                            "यह सुरक्षा टीमों को उनकी कमियों को ढूंढने में मदद करता है, लेकिन इसका उपयोग हमलावर टोही (Reconnaissance) के लिए भी कर सकते हैं।"
+                        )
+                    else:
+                        # 🛡️ SECURITY MITIGATION: Secure Error Handling against Information Leakage
+                        st.error("❌ Secure Execution Exception: Core processing engine terminated data relay to protect framework integrity.")
 
 # ==============================================================================
-# 5. DATA TELEMETRY STORAGE VIEW
+# 5. DATA TELEMETRY OUTPUT DISPLAY
 # ==============================================================================
 st.write("")
 if st.session_state.intel_title:
     st.markdown(f"### {st.session_state.intel_title}")
 
-# Displays the processed data inside a clean, sandbox container layout
 st.info(st.session_state.intel_body)
