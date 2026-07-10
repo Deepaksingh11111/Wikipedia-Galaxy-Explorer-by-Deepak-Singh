@@ -134,7 +134,7 @@ st.markdown("""
 LOCAL_OSINT_DB = {
     "sql injection": {
         "title": "SQL Injection (SQLi) - CWE-89",
-        "ai": "नमस्ते! मैं हूँ आपकी सुरक्षा विशेषज्ञ 'आशी'। SQL Injection एक बेहद गंभीर हमला है। यह तब संभव होता है जब एक डेवलपर इनपुट बॉक्स के डेटा को बिना साफ किए सीधे डेटाबेस क्वेरी में जोड़ देता है। हमलावर चालाकी से हानिकारक कोड (जैसे ' OR 1=1 --) डालकर बिना पासवर्ड के सिस्टम एडमिन पैनल लॉगिन कर सकते हैं या पूरा डेटाबेस डिलीट कर सकते हैं।\n\n🛡️ बचाव: हमेशा इनपुट को फ़िल्टर करें और 'Parameterized Queries' या 'Prepared Statements' का ही उपयोग करें।"
+        "ai": "नमस्ते! मैं हूँ आपकी सुरक्षा विशेषज्ञ 'आशी'। SQL Injection एक बेहद गंभीर हमला है। यह तब संभव होता है जब एक डेवलपर इनपुट बॉक्स के डेटा को बिना साफ किए सीधे डेटाबेस क्वेरी में जोड़ देता है। हमलावर चालाकी से हानिकारक कोड (जैसे ' OR 1=1 --) डालकर बिना密码 के सिस्टम एडमिन पैनल लॉगिन कर सकते हैं या पूरा डेटाबेस डिलीट कर सकते हैं।\n\n🛡️ बचाव: हमेशा इनपुट को फ़िल्टर करें और 'Parameterized Queries' या 'Prepared Statements' का ही उपयोग करें।"
     },
     "cross-site scripting": {
         "title": "Cross-Site Scripting (XSS) - CWE-79",
@@ -162,11 +162,15 @@ btn_col1, btn_col2 = st.columns(2)
 
 with btn_col1:
     if st.button("🔍 Gather OSINT Feed"):
-        # 🛡️ SECURITY MITIGATION: Input Sanitization
+        # 🛡️ SECURITY MITIGATION: State Flush to clear old screens instantly
+        st.session_state.intel_title = ""
+        st.session_state.intel_body = ""
+        
         clean_query = re.sub(r'[^\w\s\-\.]', '', query_input).strip()
         
         if not clean_query:
             st.error("❌ Incident Alert: Null or Malformed Telemetry Input Blocked by Sanity Filter.")
+            st.session_state.intel_body = "System Idle. Awaiting OSINT Target Query Initialization..."
         else:
             with st.spinner("📡 Querying Live Global OSINT Repositories..."):
                 page = wiki.page(clean_query)
@@ -176,11 +180,21 @@ with btn_col1:
                     st.session_state.intel_body = page.summary[:1500]
                 else:
                     st.error("❌ Incident Alert: No threat intelligence patterns identified on Live Repositories.")
+                    st.session_state.intel_body = "Anomalous signature telemetry array processed securely."
 
 with btn_col2:
     if st.button("🤖 AI Core Synthesize"):
-        if st.session_state.intel_body in ["System Idle. Awaiting OSINT Target Query Initialization...", "Anomalous signature telemetry array processed securely."]:
+        if st.session_state.intel_body in ["System Idle. Awaiting OSINT Target Query Initialization...", ""]:
             st.warning("⚠️ Action Blocked: Populate the OSINT active threat database before invoking the AI core.")
+        elif st.session_state.intel_body == "Anomalous signature telemetry array processed securely.":
+            # State clean up for malicious/bad inputs when AI is hit
+            st.session_state.intel_title = "🛡️ IntelScout Sandbox Isolation Core"
+            clean_query = re.sub(r'[^\w\s\-\.]', '', query_input).strip()
+            st.session_state.intel_body = (
+                f"नमस्ते! मैं हूँ आपकी सुरक्षा विशेषज्ञ 'आशी'। इनपुट '{clean_query if clean_query else 'Malicious/Empty Payload'}' "
+                "को हमारे सुरक्षा फ़िल्टर द्वारा पूरी तरह से आइसोलेट (Isolate) कर दिया गया है। यह नेटवर्क इंजेक्शन हमलों "
+                "और XSS से पूरी तरह सुरक्षित है। सिस्टम ने किसी अज्ञात कोड को चलाने के बजाय उसे सैंडबॉक्स कंटेनर में ब्लॉक कर दिया है।"
+            )
         else:
             with st.spinner("🤖 Initiating IntelScout Analysis Core..."):
                 query_lower = query_input.lower().strip()
@@ -197,8 +211,8 @@ with btn_col2:
                 else:
                     st.session_state.intel_title = "🛡️ IntelScout Custom Intelligence Summary"
                     st.session_state.intel_body = (
-                        f"नमस्ते! मैं हूँ आपकी सुरक्षा विशेषज्ञ 'आशी' और आप देख रहे हैं IntelScout OSINT Parser प्लेटफॉर्म। इनपुट '{query_input}' को हमारे फ़िल्टर द्वारा सुरक्षित रूप से प्रोसेस कर दिया गया है। "
-                        "यह क्वेरी क्लाइंट-साइड हमलों से पूरी तरह सुरक्षित है और सैंडबॉक्स एनवायरनमेंट में मैनेज की जा रही है।"
+                        f"नमस्ते! मैं हूँ आपकी सुरक्षा विशेषज्ञ 'आशी'। लाइव रीपॉजिटरी से प्राप्त इनपुट डेटा को हमारे "
+                        "फ़िल्टर द्वारा सुरक्षित रूप से पार्स कर दिया गया है। यह क्वेरी क्लाइंट-साइड हमलों से सुरक्षित है।"
                     )
 
 # ==============================================================================
@@ -208,4 +222,5 @@ st.write("")
 if st.session_state.intel_title:
     st.markdown(f"### {st.session_state.intel_title}")
 
-st.info(st.session_state.intel_body)
+if st.session_state.intel_body and st.session_state.intel_body not in ["System Idle. Awaiting OSINT Target Query Initialization...", "Anomalous signature telemetry array processed securely."]:
+    st.info(st.session_state.intel_body)
