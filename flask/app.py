@@ -1,138 +1,70 @@
 import re
-from flask import Flask, render_template_string, request, jsonify
+import streamlit as st
 import wikipediaapi
 import google.generativeai as genai
-import os
+import streamlit.components.v1 as components
 
-app = Flask(__name__)
+# ==============================================================================
+# 1. PAGE CONFIGURATION & METADATA
+# ==============================================================================
+st.set_page_config(
+    page_title="ThreatIntel OSINT Hub",
+    page_icon="🛡️",
+    layout="wide"
+)
 
-# Professional, secure User-Agent header string
+# Professional, secure User-Agent to comply with Wikimedia's API policy
 USER_AGENT = "ThreatIntelOSINTExplorer/6.0 (Deepak Singh)"
 wiki = wikipediaapi.Wikipedia(language='en', user_agent=USER_AGENT)
 
-# Secured configuration - In a live environment, this would load from os.environ.get()
+# Google Gemini API Core Setup
+# SECURED CONFIGURATION: In production, load this securely from st.secrets or environment variables
 genai.configure(api_key="AIzaSyCWBp_K8vDpyxVl05ALnO0AmnQtUifU1x0")
 MODEL_NAME = "models/gemini-2.0-flash"
 
-HTML = """
+# Session State Initialization to prevent data loss across Streamlit component refreshes
+if "intel_title" not in st.session_state:
+    st.session_state.intel_title = ""
+if "intel_body" not in st.session_state:
+    st.session_state.intel_body = "System Idle. Awaiting OSINT Target Query Initialization..."
+
+# ==============================================================================
+# 2. EMBEDDED MATRIX BACKGROUND UI (HTML/CSS/JS Canvas Injection)
+# ==============================================================================
+# This serves as a visual layout mimicking a Security Operations Center (SOC) dashboard
+matrix_html = """
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>🛡️ ThreatIntel OSINT Hub & AI Analyzer</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap');
 body {
-  margin: 0;
-  background: radial-gradient(circle, #0a0f1d, #070a14, #020306);
-  color: #e0e6ed;
-  font-family: "Poppins", sans-serif;
-  overflow: hidden;
-}
-.container { text-align: center; padding-top: 60px; }
-h1 {
-  background: linear-gradient(135deg, #e0f7fa 0%, #00bfa5 50%, #00796b 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-weight: 800;
-}
-input {
-  width: 350px; padding: 12px; border-radius: 8px;
-  border: 1px solid rgba(0, 191, 165, 0.4); outline: none;
-  background: rgba(10, 15, 30, 0.8); color: #00bfa5;
-  font-family: monospace; font-size: 14px;
-}
-input:focus {
-  border-color: #00bfa5;
-  box-shadow: 0 0 10px rgba(0, 191, 165, 0.3);
-}
-button {
-  background: linear-gradient(45deg, #00796b, #00bfa5);
-  border: none; margin: 5px; padding: 12px 20px;
-  border-radius: 8px; cursor: pointer; color: #000;
-  font-weight: bold; transition: 0.2s;
-}
-button:hover { 
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 191, 165, 0.4);
-}
-.card {
-  background: rgba(15, 23, 42, 0.95);
-  margin: 30px auto; padding: 25px; border-radius: 12px; width: 75%;
-  border: 1px solid rgba(0, 191, 165, 0.2);
-  box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
-  text-align: left;
-  max-height: 400px; overflow-y: auto;
+  margin: 0; color: #e0e6ed; font-family: "Poppins", sans-serif; overflow: hidden; background: transparent;
 }
 #matrixCanvas {
-  position: fixed; top: 0; left: 0; z-index: -1;
-  width: 100%; height: 100%;
+  position: fixed; top: 0; left: 0; z-index: -1; width: 100%; height: 100%;
 }
+.header-box { text-align: center; padding-top: 20px; }
+h1 {
+  background: linear-gradient(135deg, #e0f7fa 0%, #00bfa5 50%, #00796b 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  font-weight: 800; font-size: 36px; margin: 0;
+  letter-spacing: -0.5px;
+}
+p { color: #8892b0; margin: 5px 0 20px 0; font-size: 14px; letter-spacing: 0.5px; }
 </style>
 </head>
 <body>
 <canvas id="matrixCanvas"></canvas>
-<div class="container">
+<div class="header-box">
   <h1>🛡️ ThreatIntel OSINT Hub & AI Analyzer</h1>
-  <p style="color: #8892b0; margin-bottom: 20px;">Open Source Intelligence Gathering & Secure LLM Synthesis Engine</p>
-  <input id="query" placeholder="Enter target vulnerability, CVE, or tech entity..." />
-  <button onclick="searchWiki()">🔍 Gather OSINT</button>
-  <button onclick="voiceSearch()">🎙️ Voice Command</button>
-  <button onclick="aiExplain()">🤖 AI Core Synthesize</button>
-  <div id="output" class="card"><em>System Idle. Awaiting Query Initialization...</em></div>
+  <p>Automated Open Source Intelligence Gathering & Secure LLM Synthesis Engine</p>
 </div>
 <script>
-async function searchWiki() {
-  const query = document.getElementById("query").value;
-  const output = document.getElementById("output");
-  output.innerHTML = "📡 <span style='color:#00bfa5;'>Querying Global OSINT Registries...</span>";
-  const res = await fetch("/search", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({query}),
-  });
-  const data = await res.json();
-  if (data.error) return output.innerHTML = "<span style='color:#ff5252;'>❌ Incident Alert: " + data.error + "</span>";
-  output.innerHTML = `<h2>📁 Target: ${data.title}</h2><p>${data.summary}</p>`;
-  speakHindi(data.summary);
-}
-async function aiExplain() {
-  const text = document.getElementById("output").innerText;
-  const output = document.getElementById("output");
-  output.innerHTML += "<p style='color:#00bfa5;'>🤖 Initiating Deep LLM Vulnerability Analysis...</p>";
-  const res = await fetch("/ai_explain", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({summary: text}),
-  });
-  const data = await res.json();
-  if (data.result) {
-    output.innerHTML = `<h3>🛡️ Security Intelligence Summary (Aashi Core):</h3><p>${data.result}</p>`;
-    speakHindi(data.result);
-  } else output.innerHTML = "<span style='color:#ff5252;'>❌ Synthesis Error: " + data.error + "</span>";
-}
-function voiceSearch() {
-  const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-  rec.lang = "en-IN";
-  rec.start();
-  rec.onresult = (e) => {
-    const text = e.results[0][0].transcript;
-    document.getElementById("query").value = text;
-    searchWiki();
-  };
-}
-function speakHindi(text) {
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = "hi-IN"; u.pitch = 1; u.rate = 1; u.volume = 1;
-  speechSynthesis.speak(u);
-}
-
-// Matrix/Digital Rain Effect for Premium Cyber Look
 const canvas = document.getElementById("matrixCanvas");
 const ctx = canvas.getContext("2d");
 function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 }
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
@@ -143,9 +75,9 @@ const columns = canvas.width / fontSize;
 const drops = Array(Math.floor(columns)).fill(1);
 
 function drawMatrix() {
-  ctx.fillStyle = "rgba(10, 15, 29, 0.08)";
+  ctx.fillStyle = "rgba(13, 17, 23, 0.08)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "rgba(0, 191, 165, 0.35)";
+  ctx.fillStyle = "rgba(0, 191, 165, 0.25)";
   ctx.font = fontSize + "px monospace";
   
   for(let i = 0; i < drops.length; i++) {
@@ -163,43 +95,114 @@ setInterval(drawMatrix, 40);
 </html>
 """
 
-@app.route('/')
-def home():
-    return render_template_string(HTML)
+# Render the high-end matrix background header
+components.html(matrix_html, height=140)
 
-@app.route('/search', methods=['POST'])
-def search():
-    data = request.json
-    raw_query = data.get('query', '').strip()
-    
-    # SECURITY IMPLEMENTATION: Strict Backend Input Sanitization / XSS & SQLi Defense
-    # We remove characters that could cause malformed strings or syntax issues
-    clean_query = re.sub(r'[^\w\s\-\.]', '', raw_query)
-    
-    if not clean_query:
-        return jsonify({"error": "Null or Invalid Telemetry Input Detected"}), 400
+# ==============================================================================
+# 3. STREAMLIT CYBERPUNK STYLING FOR SECURITY CONTROLS
+# ==============================================================================
+st.markdown("""
+<style>
+.stApp {
+    background-color: #0d1117 !important;
+    color: #e6edf3 !important;
+}
+/* Style the main dashboard containers to look like centralized security widgets */
+div[data-testid="stVerticalBlock"] > div {
+    background: rgba(15, 23, 42, 0.85) !important;
+    border: 1px solid rgba(0, 191, 165, 0.3) !important;
+    border-radius: 12px !important;
+    padding: 25px !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6) !important;
+}
+.stTextInput label p {
+    color: #00bfa5 !important;
+    font-weight: 600 !important;
+    font-size: 15px !important;
+}
+.stTextInput input {
+    background-color: #0a0f1d !important;
+    border: 1px solid rgba(0, 191, 165, 0.4) !important;
+    color: #00bfa5 !important;
+    font-family: monospace;
+    font-size: 14px;
+}
+.stTextInput input:focus {
+    border-color: #00bfa5 !important;
+}
+.stButton > button {
+    background: linear-gradient(45deg, #00796b, #00bfa5) !important;
+    color: #000000 !important;
+    font-weight: 800 !important;
+    border: none !important;
+    border-radius: 8px !important;
+    height: 45px;
+    width: 100%;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.stButton > button:hover {
+    box-shadow: 0 0 20px rgba(0, 191, 165, 0.6) !important;
+    transform: translateY(-1px);
+}
+div[data-testid="stNotification"] {
+    background-color: #0a0f1d !important;
+    border: 1px solid rgba(0, 191, 165, 0.2) !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ==============================================================================
+# 4. DIRECT INTERACTIVE BACKEND BACKBONE
+# ==============================================================================
+# Input terminal string
+query_input = st.text_input("🔑 System Telemetry Target Query (CVE, Vulnerability, or Threat Actor)", placeholder="e.g., Cross-Site Scripting, Ransomware, SQL Injection...")
+
+btn_col1, btn_col2 = st.columns(2)
+
+with btn_col1:
+    if st.button("🔍 Gather OSINT Feed"):
+        # 🛡️ SECURITY MITIGATION: Strict Backend Input Sanitization
+        # Defensive code blocking SQL Injection and Cross-Site Scripting (XSS) payload syntax
+        clean_query = re.sub(r'[^\w\s\-\.]', '', query_input).strip()
         
-    page = wiki.page(clean_query)
-    if not page.exists():
-        return jsonify({"error": "No threat intel records found for specified entity"}), 404
-        
-    summary = page.summary[:1500]
-    return jsonify({"title": page.title, "summary": summary})
+        if not clean_query:
+            st.error("❌ Incident Alert: Null or Malformed Telemetry Input Blocked by Sanity Filter.")
+        else:
+            with st.spinner("📡 Querying Global OSINT Registries..."):
+                page = wiki.page(clean_query)
+                if page.exists():
+                    st.session_state.intel_title = f"📁 OSINT Target Threat Profile: {page.title}"
+                    st.session_state.intel_body = page.summary[:1500]
+                else:
+                    st.error("❌ Incident Alert: No threat intelligence patterns identified for specified entity.")
 
-@app.route('/ai_explain', methods=['POST'])
-def ai_explain():
-    data = request.json
-    summary = data.get('summary', '')
-    try:
-        model = genai.GenerativeModel(MODEL_NAME)
-        # Context-adjusted system instruction to keep it professional and aligned
-        prompt = f"आप एक अनुभवी भारतीय AI साइबर सुरक्षा विशेषज्ञ सहायक 'आशी' हैं। इस तकनीकी इंटेलिजेंस सारांश को आसान हिंदी में समझाइए:\n{summary}"
-        response = model.generate_content(prompt)
-        return jsonify({"result": response.text.strip()})
-    except Exception as e:
-        # Secure Error Handling: Do not leak specific system error stack traces to clients
-        return jsonify({"error": "Secure execution error during core processing module."})
+with btn_col2:
+    if st.button("🤖 AI Core Synthesize"):
+        if st.session_state.intel_body == "System Idle. Awaiting OSINT Target Query Initialization...":
+            st.warning("⚠️ Action Blocked: Populate the OSINT active threat database before invoking the AI core.")
+        else:
+            with st.spinner("🤖 Initiating Deep LLM Vulnerability Analysis Core..."):
+                try:
+                    model = genai.GenerativeModel(MODEL_NAME)
+                    
+                    # Context-Adjusted Prompt forcing professional behavior profiling output
+                    prompt = f"आप एक अनुभवी भारतीय AI साइबर सुरक्षा विशेषज्ञ सहायक 'आशी' हैं। इस तकनीकी इंटेलिजेंस सारांश को आसान हिंदी में समझाइए:\n{st.session_state.intel_body}"
+                    response = model.generate_content(prompt)
+                    
+                    st.session_state.intel_title = "🛡️ Security Intelligence Summary (Aashi Core AI Synthesis)"
+                    st.session_state.intel_body = response.text.strip()
+                except Exception as e:
+                    # 🛡️ SECURITY MITIGATION: Secure Error Handling / Defending Against Information Leakage
+                    # Never print native stack traces (e.g., explicit API strings, line crashes) to unauthorized frontends
+                    st.error("❌ Secure Execution Exception: Core processing engine terminated data relay to protect framework integrity.")
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+# ==============================================================================
+# 5. DATA TELEMETRY STORAGE VIEW
+# ==============================================================================
+st.write("")
+if st.session_state.intel_title:
+    st.markdown(f"### {st.session_state.intel_title}")
+
+# Displays the processed data inside a clean, sandbox container layout
+st.info(st.session_state.intel_body)
